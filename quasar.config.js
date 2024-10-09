@@ -27,7 +27,8 @@ module.exports = configure(function (/* ctx */) {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: [
-      'app.scss'
+      'app.scss',
+      'style.css'
     ],
 
     // https://github.com/quasarframework/quasar/tree/dev/extras
@@ -49,6 +50,9 @@ module.exports = configure(function (/* ctx */) {
       target: {
         browser: [ 'es2019', 'edge88', 'firefox78', 'chrome87', 'safari13.1' ],
         node: 'node20'
+      },
+      env:  {
+        VUE_APP_API_URL: process.env.VUE_APP_API_URL,
       },
 
       vueRouterMode: 'hash', // available values: 'hash', 'history'
@@ -101,7 +105,8 @@ module.exports = configure(function (/* ctx */) {
 
       // Quasar plugins
       plugins: [
-        'Notify'
+        'Dialog',
+        'Notify',
       ]
     },
 

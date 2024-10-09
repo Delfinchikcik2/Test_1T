@@ -1,59 +1,75 @@
 <template>
-  <q-layout view="hHh lpR fFf">
-
-    <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-btn v-if="!isRouteAuth" dense flat round icon="menu" @click="toggleLeftDrawer" />
-
-        <q-toolbar-title>
-          <q-avatar>
-            <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg">
-          </q-avatar>
-          Title
-        </q-toolbar-title>
-        <q-btn v-if="!isRouteAuth" dense flat round icon="logout" @click="logOut"/>
-      </q-toolbar>
+  <q-layout view="hHh lpR fFf" class="mainLayout">
+    <q-header>
+      <header-layout>
+        <template #spaces>
+          <SpacesSwitch></SpacesSwitch>
+        </template>
+        <template #burger>
+          <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
+        </template>
+        <template #logout>
+          <q-btn dense flat round icon="logout" @click="logOut"/>
+        </template>
+      </header-layout>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" side="left" bordered>
-      <!-- drawer content -->
-    </q-drawer>
 
-    <q-page-container>
-      <router-view />
+      <drawer-layout :left-drawer-open="drawState" @toggle="handlerToggl"
+      ></drawer-layout>
+
+
+
+    <q-page-container class="pageConteiner">
+      <keep-alive>
+        <router-view />
+      </keep-alive>
     </q-page-container>
 
-    <q-footer elevated class="bg-grey-8 text-white">
-      <q-toolbar>
-        <q-toolbar-title>
-          <q-avatar>
-            <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg">
-          </q-avatar>
-          <div>Тестовый интерфейс</div>
-        </q-toolbar-title>
-      </q-toolbar>
+    <q-footer>
+      <footer-layout></footer-layout>
     </q-footer>
 
   </q-layout>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useUserStore } from 'src/stores/user-info';
+import HeaderLayout from 'src/layouts/HeaderLayout.vue'
+import FooterLayout from 'src/layouts/FooterLayout.vue';
+import DrawerLayout from './DrawerLayout.vue';
+import SpacesSwitch from 'src/components/SpacesSwitch.vue';
 
-const leftDrawerOpen =ref(false)
-const route = useRoute();
+const drawState = ref(false);
 const router = useRouter();
-const isRouteAuth = computed(()=>route.path === '/auth')
 const {clearUserData} = useUserStore()
-
-const toggleLeftDrawer = ()=> {
-        leftDrawerOpen.value = !leftDrawerOpen.value
-      }
 
 const logOut = ()=>{
   router.push('/auth')
   clearUserData();
 }
+
+const handlerToggl = (state) =>{
+  drawState.value = state;
+}
+
+const toggleLeftDrawer = () => {
+  drawState.value = !drawState.value;
+  }
+
 </script>
+<style>
+.mainLayout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.pageConteiner {
+  flex: 1; 
+  padding: 20px;
+  margin: 60px 0;
+}
+</style>

@@ -13,5 +13,21 @@ mutation UserSignIn($input: UserSignInInput!) {
 		status
   }
 }
+`
 
+export const CREATE_SPACE = gql`
+mutation createSpace($input: SpaceCreateInput!) {
+  spaceCreate(input: $input) {
+    recordId
+    status
+    __typename
+  }
+}
+`
+export const INVITE_USER_IN_GROUP = gql`
+mutation spaceInviteUser($input: SpaceInviteUserInput!) {
+  spaceInviteUser(input: $input) {
+      status
+  }
+}
 `

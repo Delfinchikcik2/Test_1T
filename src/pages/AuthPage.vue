@@ -1,5 +1,5 @@
 <template>
-    <div class="q-pa-md q-mx-auto" style="max-width: 400px">
+    <div class="q-pa-md q-mx-auto q-my-auto" style="max-width: 400px">
         <q-card>
             <q-card-section>
                 <div class="text-h4 text-center q-py-md">
@@ -60,6 +60,7 @@ const {setUserId, setToken} = useUserStore()
 const { mutate: login } = useMutation(LOGIN);
 
 const onSubmit = async () => {
+
     if (accept.value !== true) {
         $q.notify({
             color: 'red-5',
@@ -100,9 +101,9 @@ const onSubmit = async () => {
             color: 'green-4',
             textColor: 'white',
             icon: 'cloud_done',
-            message: `Пользователь ${user_id} авторизован`
+            message: `Пользователь авторизован`
         });
-        router.push('/index')
+        router.push('/')
     } catch (e) {
         $q.notify({
             color: 'red-5',

@@ -5,6 +5,7 @@ export const useUserStore = defineStore("useUserinfo", () => {
   const token = ref('');
   const refresh_token = ref('');
   const user_id = ref('');
+  const space_id = 0;
 
   const setToken = (token) => {
     localStorage.setItem("acsess_token",token)
@@ -16,6 +17,12 @@ export const useUserStore = defineStore("useUserinfo", () => {
   const setUserId = (userId) => {
     localStorage.setItem("user_id",userId)
   };
+  const setSpaceId = (spaceId) =>{
+    localStorage.setItem("space_id",spaceId)
+  }
+  const getSpaceId = ()=>{
+    return space_id = localStorage.getItem("space_id")
+  }
 
   const getToken = ()=>{
     return token.value = localStorage.getItem("acsess_token");
@@ -32,6 +39,7 @@ export const useUserStore = defineStore("useUserinfo", () => {
       localStorage.removeItem("acsess_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user_id");
+      localStorage.removeItem("space_id");
     }
   return {
     token,
@@ -41,10 +49,12 @@ export const useUserStore = defineStore("useUserinfo", () => {
     setToken,
     setRefreshToken,
     setUserId,
+    setSpaceId,
 
     getRefreshToken,
     getToken,
     getUserId,
+    getSpaceId,
 
     clearUserData
   };

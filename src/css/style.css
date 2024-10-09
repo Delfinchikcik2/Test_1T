@@ -1,0 +1,75 @@
+.styled-table {
+    width: 90%;
+    border-collapse: collapse;
+    margin: 0 auto;
+    font-size: 18px;
+    text-align: left;
+  }
+  
+  .styled-table thead tr {
+    background-color: #26A69A;
+    color: #ffffff;
+    text-align: center;
+    font-weight: bold;
+  }
+  
+  .styled-table th,
+  .styled-table td {
+    padding: 10px 16px;
+    border: 1px solid #dddddd;
+    text-align: center;
+  }
+  
+  .styled-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+  }
+  
+  .styled-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+  }
+  
+  .styled-table tbody tr:last-of-type {
+    border-bottom: 2px solid #000000;
+  }
+  
+  .styled-table tbody tr:hover {
+    background-color: #f1f1f1;
+  }
+  
+  .group-list {
+    padding-left: 20px;
+  }
+  
+  .loading {
+    font-size: 40px;
+    color: #333;
+    margin: 40px 50vw
+  }
+  
+  .error {
+    color: red;
+    font-size: 18px;
+  }
+  
+  .no-data {
+    color: #666;
+    font-size: 18px;
+  }
+  
+  .fio-header {
+    text-align: left;
+    padding-left: 20px;
+  }
+  
+  .fio-header-content {
+    text-align: center;
+  }
+  
+  .add-user-btn {
+    margin-left: 10px;
+  }
+  .inviteForm_title{
+    font-size: 20px;
+    text-align: center;
+    padding: 20px;
+  }

@@ -2,21 +2,19 @@ import { useUserStore } from 'src/stores/user-info';
 const routes = [
   {
     path: '/',
-    component: () => import('layouts/MainLayout.vue'),
+    component: () => import('layouts/MainLayout.vue'), meta: {requaresAuth: true},
     children: [
-      { path: '', redirect: '/auth' },  
-      { path: 'auth', component: () => import('pages/AuthPage.vue') },  
-      {
-        path: 'index',
-        component: () => import('pages/IndexPage.vue'),
-        beforeEnter: (to, from, next) => {
-          if (useUserStore().getToken()) {
-            next();  
-          } else {
-            next('/auth');  
-          }
-        }
-      }
+      { path: '/groupPage/:id', name: 'groupPage', component: () => import('pages/PageWithTable.vue') },
+      { path: '/page/:id', name: 'page', component: () => import('src/pages/PageType.vue')},
+
+    ]
+  },
+  {
+    path: '/',
+    component: () => import('layouts/AuthLayout.vue'),
+    children:[
+      { path: '/auth', component: () => import('pages/AuthPage.vue') },  
+
     ]
   },
 
