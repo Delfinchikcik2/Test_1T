@@ -89,7 +89,7 @@ const statusOption = ref(null)
 
 const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_RESPONSIBLES, {}, {fetchPolicy: 'no-cache'});
 const { result: moduleResult, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useQuery(PAGINATE_MODULE, {}, {fetchPolicy: 'no-cache'});
-const {load: premissionTree, result, loading: premissionTreeLoading} = useLazyQuery(PREMISSION_TREE_SUBJECTS, {}, {fetchPolicy: 'no-cache'});
+const {load: premissionTree, result: premissionTreeResult, loading: premissionTreeLoading} = useLazyQuery(PREMISSION_TREE_SUBJECTS, {}, {fetchPolicy: 'no-cache'});
 const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 
 watch([moduleLoading, subjectLoading, StatusLoading], ([isModuleLoading, isSubjectLoading, isStatusLoadung]) => {
@@ -363,8 +363,9 @@ const updateModule = async () => {
   }
   console.log(variable);
   try {
-    checkPremissionTree(newModule.value.id, "object")
-      console.log(result.permissionTreeSubjects);
+   premissionTreeResult.value = await checkPremissionTree(newModule.value.id, "object")
+    if(premissionTreeResult.value){
+      console.log(premissionTreeResult.value);
         console.log(newModule.value.responsible_now);
       const oldIdRulesObject = premissionTreeResult.value
       console.log(oldIdRulesObject);
@@ -378,10 +379,12 @@ const updateModule = async () => {
         icon: 'assignment_turned_in',
         message: `Модуль "${variable.input.name}" обновлен `
       });
+      }
       await refetchModule()
       updateBtn.value = false
       newModule.value = null
     }
+
   } catch (error) {
     console.log("Error update module", error);
 
@@ -408,15 +411,16 @@ const createManyPremissions = (modelType, modelId, oldIdRules)=>{
 }
 }
 
-const checkPremissionTree = (id, type)=>{
+const checkPremissionTree = async (id, type)=>{
   const variable ={
     modelId: id,
     modelType: type,
-    groupId:"7911388975213131340"
+    groupId:"7329570140695640028"
   }
   try {
-    premissionTree(PREMISSION_TREE_SUBJECTS,variable)
-    if(!premissionTreeLoading) return
+   premissionTreeResult.value = await premissionTree(PREMISSION_TREE_SUBJECTS,variable)
+    return premissionTreeResult.value
+  
   } catch (error) {
     console.log("Error check premision", error);
   }

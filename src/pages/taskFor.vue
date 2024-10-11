@@ -77,11 +77,19 @@ const statusOption = ref([])
 const subjects = ref(null)
 const executorOptions = ref(null)
 const router = useRoute()
+let variable = ref({
+  id: router.params.id
+})
+watch(() => router.params.id, (newId) => {
+  variable.value.id = newId
+  refetch()
+})
 
-const {result: pageResult, loading: pageLoading} = useQuery(GET_PAGE, {id: router.params.id}, { fetchPolicy: 'no-cache' });
+const {result: pageResult, loading: pageLoading, refetch} = useQuery(GET_PAGE, variable, { fetchPolicy: 'no-cache' });
 const {load: paginateTasks, result: tasksResult, loading: tasksLoading, refetch: refetchTasks } = useLazyQuery(PAGINATE_TASKS, {}, { fetchPolicy: 'no-cache' });
 const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_EXECUTOR, {}, {fetchPolicy: 'no-cache'});
+
 
 
 watch([pageLoading, tasksLoading, StatusLoading, subjectLoading], async ([isPageLoading, isTasksLoading, isStatusLoadung, isSubjectLoading]) => {
