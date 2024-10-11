@@ -344,8 +344,8 @@ const editModule = (item) => {
   updateBtn.value = true
 }
 
-const { mutate: fetchUpdate } = useMutation(UPDATE_MODULE)
-const {mutate: setManyPremission} = useMutation(MANY_PREMISSION_RULES)
+const { mutate: fetchUpdate } = useMutation(UPDATE_MODULE, {}, {fetchPolicy: 'no-cache'})
+const {mutate: setManyPremission, onDone: doneManyPremission} = useMutation(MANY_PREMISSION_RULES, {}, {fetchPolicy: 'no-cache'})
 
 const updateModule = async () => {
   const variable = {
@@ -366,19 +366,21 @@ const updateModule = async () => {
    premissionTreeResult.value = await checkPremissionTree(newModule.value.id, "object")
     if(premissionTreeResult.value){
       console.log(premissionTreeResult.value);
-        console.log(newModule.value.responsible_now);
-      const oldIdRulesObject = premissionTreeResult.value
-      console.log(oldIdRulesObject);
-      if(oldIdRulesObject){
-        createManyPremissions("object", newModule.value.id, oldIdRulesObject.permission_rule_id)
-      
-      await fetchUpdate(variable)
-      $q.notify({
-        color: 'green-4',
-        textColor: 'white',
-        icon: 'assignment_turned_in',
-        message: `Модуль "${variable.input.name}" обновлен `
-      });
+        console.log(newModule.value.responsible_now);   
+      const oldPremissionRule = premissionTreeResult.value?.permissionTreeSubjects?.data.find(subject => subject?.subject_id == newModule.value.responsible_now)
+      if(oldPremissionRule){
+        console.log("oldRule ",oldPremissionRule);
+        
+      await createManyPremissions("object", newModule.value.id, oldPremissionRule.permission_rule_id)
+      doneManyPremission((result) =>{
+         fetchUpdate(variable)
+        $q.notify({
+          color: 'green-4',
+          textColor: 'white',
+          icon: 'assignment_turned_in',
+          message: `Модуль "${variable.input.name}" обновлен `
+        });
+        })
       }
       await refetchModule()
       updateBtn.value = false
@@ -391,7 +393,7 @@ const updateModule = async () => {
   }
 }
 
-const createManyPremissions = (modelType, modelId, oldIdRules)=>{
+const createManyPremissions = async (modelType, modelId, oldIdRules)=>{
   const variable = {
     input: {
       model_type: modelType,
@@ -408,6 +410,14 @@ const createManyPremissions = (modelType, modelId, oldIdRules)=>{
          }
       ]
    }
+  }
+  console.log("Many variable", variable);
+try {
+  if(variable){
+    await setManyPremission(variable)
+  }
+} catch (error) {
+  console.log("Error createManyPremissions", error);
 }
 }
 
