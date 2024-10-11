@@ -74,7 +74,7 @@ import { CREATE_PAGE } from 'src/querys/pageQuery';
 import { useRoute } from 'vue-router';
 import { CREATE_PREMISSION, MANY_PREMISSION_RULES, PREMISSION_TREE_SUBJECTS } from 'src/querys/premissionQuery';
 import { GET_RESPONSIBLES } from 'src/querys/groupQuery';
-import { TASK_STATUS_PROPERTI } from 'src/querys/tasksQuery';
+import { PAGINATE_TASKS, TASK_STATUS_PROPERTI } from 'src/querys/tasksQuery';
 
 const $q = useQuasar()
 const route = useRoute()
@@ -90,6 +90,7 @@ const statusOption = ref(null)
 const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_RESPONSIBLES, {}, {fetchPolicy: 'no-cache'});
 const { result: moduleResult, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useQuery(PAGINATE_MODULE, {}, {fetchPolicy: 'no-cache'});
 const {load: premissionTree, result, loading: premissionTreeLoading} = useLazyQuery(PREMISSION_TREE_SUBJECTS, {}, {fetchPolicy: 'no-cache'});
+const {load: moduleTasksStatus, result: moduleTasksStatusResult, loading: moduleTasksLoading, refetch: refetchTasks} = useLazyQuery(PAGINATE_TASKS, {}, {fetchPolicy: 'network-only'});
 const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 
 watch([moduleLoading, subjectLoading, StatusLoading], ([isModuleLoading, isSubjectLoading, isStatusLoadung]) => {
@@ -120,56 +121,81 @@ const setSubject = () => {
   }))
 }
 
-const loadModule = () => {
-  console.log("module Result ",moduleResult.value);
-  
+const loadModule = async () => {
+  console.log("moduleResult ", moduleResult.value);
+
   modules.value = moduleResult.value.paginate_type1.data.map(module => {
-    const statusCount = {
-      assigned: 0,
-      completed: 0,
-      closed: 0
-    };
-    const getStatusById = (statusId) => {
-      return statusOption.value.find(status => status.id === statusId) || { label: "Неизвестен", color: "gray" };
-    };
-
-    const tasks = module?.responsible?.map(task => {
-      const taskStatusId = task?.object?.task_status;
-
-      const status = getStatusById(taskStatusId);
-
-   
-      if (status.id === statusOption.value[0].id) { 
-        statusCount.assigned++;
-      } else if (status.id === statusOption.value[1].id) { 
-        statusCount.completed++;
-      } else if (status.id === statusOption.value[2].id) {
-        statusCount.closed++;
-      }
-
-      return {
-        id: task?.object?.id,
-        name: task?.object?.name,
-        status: status?.label,   
-        color: status?.color  
-      };
-    });
-
     return {
       name: module?.name,
       id: module?.id,
       start_date: module?.start_date,
       end_date: module?.end_date,
       responsible_now: module?.responsible_id?.object?.id,
-      fullname: `${module?.responsible_id?.object?.fullname?.first_name}  ${module?.responsible_id?.object?.fullname?.last_name}`,
-      tasks: tasks,
-      statusCount: statusCount
+      fullname: `${module?.responsible_id?.object?.fullname?.first_name} ${module?.responsible_id?.object?.fullname?.last_name}`,
+      tasks: [], 
+      statusCount: { assigned: 0, completed: 0, closed: 0 }
     };
   });
-  createBtn.value = true,
-  console.log(modules.value);
-  
+
+  console.log("Initial modules without tasks: ", modules.value);
+
+  for (let module of modules.value) {
+    let variable = {
+      where: {
+        column: "8069307079596173140->3820285012994084460->objectId",
+        operator: "EQ",
+        value: module.id
+      }
+    };
+    console.log("MODEL ID", module.id);
+    moduleTasksStatusResult.value = null
+    try {
+        await moduleTasksStatus(PAGINATE_TASKS, variable, {fetchPolicy: 'network-only'});
+
+      if (moduleTasksStatusResult.value.paginate_type2?.data) {
+
+        const statusCount = { assigned: 0, completed: 0, closed: 0 };
+        console.log("statuscount ", statusCount);
+        
+        const tasks = moduleTasksStatusResult.value.paginate_type2.data.map(task => {
+          console.log("task",  task);
+          
+          const taskStatusId = task?.task_status;
+          const status = getStatusById(taskStatusId);
+
+          if (status.id === statusOption.value[0].id) {
+            statusCount.assigned++;
+          } else if (status.id === statusOption.value[1].id) {
+            statusCount.completed++;
+          } else if (status.id === statusOption.value[2].id) {
+            statusCount.closed++;
+          }
+
+          return {
+            id: task?.object?.id,
+            name: task?.object?.name,
+            status: status?.label,
+            color: status?.color
+          };
+          
+        });
+
+        module.tasks = tasks;
+        module.statusCount = statusCount;
+      }
+    } catch (error) {
+      console.log("Error module check ", error);
+    }
+  }
+
+  createBtn.value = true;
+  console.log("Final modules with tasks: ", modules.value); 
 }
+
+
+const getStatusById = (statusId) => {
+            return statusOption.value.find(status => status.id === statusId) || { label: "Неизвестен", color: "gray" };
+          };
 
 const resetInputModule = () => {
   newModule.value = {
