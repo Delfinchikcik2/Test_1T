@@ -149,6 +149,7 @@ const loadModule = async () => {
     };
     console.log("MODEL ID", module.id);
     moduleTasksStatusResult.value = null
+    await refetchTasks(PAGINATE_TASKS, variable, {fetchPolicy: 'network-only'})
     try {
         await moduleTasksStatus(PAGINATE_TASKS, variable, {fetchPolicy: 'network-only'});
 
