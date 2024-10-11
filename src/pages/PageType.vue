@@ -10,8 +10,12 @@
           <th>Статус</th>
         </tr>
       </thead>
-      <div v-if="moduleLoading" class="loading">Загрузка...</div>
-      <div v-else-if="moduleError" class="error">Ошибка загрузки данных: {{ moduleError.message }}</div>
+      <tr v-if="moduleLoading">
+          <td colspan="4" class="loading">Загрузка...</td>
+        </tr>
+        <tr v-else-if="moduleError">
+          <td colspan="4" class="error">Ошибка загрузки данных: {{ moduleError.message }}</td>
+        </tr>
       <tbody v-else-if="moduleResult">
         <tr v-for="module in modules" :key="module.id" class="module-row">
           <td>
@@ -62,14 +66,15 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { CREATE_MODULE, PAGINATE_MODULE, UPDATE_MODULE } from 'src/querys/moduleQuery';
-import { PAGINATE_SUBJECT } from 'src/querys/getQuery';
-import { useMutation, useQuery } from '@vue/apollo-composable';
+import { useLazyQuery, useMutation, useQuery } from '@vue/apollo-composable';
 import { useQuasar } from 'quasar';
 import { CREATE_PAGE } from 'src/querys/pageQuery';
 import { useRoute } from 'vue-router';
-import { CREATE_PREMISSION } from 'src/querys/premissionQuery';
+import { CREATE_PREMISSION, MANY_PREMISSION_RULES, PREMISSION_TREE_SUBJECTS } from 'src/querys/premissionQuery';
+import { GET_RESPONSIBLES } from 'src/querys/groupQuery';
+import { TASK_STATUS_PROPERTI } from 'src/querys/tasksQuery';
 
 const $q = useQuasar()
 const route = useRoute()
@@ -80,40 +85,34 @@ const modules = ref([]);
 const newModule = ref(null);
 const subjects = ref([])
 const subjectOptions = ref([])
+const statusOption = ref(null)
 
-const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(PAGINATE_SUBJECT, {}, {
-  fetchPolicy: 'no-cache'
-});
-const { result: moduleResult, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useQuery(PAGINATE_MODULE, {}, {
-  fetchPolicy: 'no-cache'
-});
+const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_RESPONSIBLES, {}, {fetchPolicy: 'no-cache'});
+const { result: moduleResult, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useQuery(PAGINATE_MODULE, {}, {fetchPolicy: 'no-cache'});
+const {load: premissionTree, result, loading: premissionTreeLoading} = useLazyQuery(PREMISSION_TREE_SUBJECTS, {}, {fetchPolicy: 'no-cache'});
+const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 
-const statusMapping = {
-  "4641784570903815283": "Назначена",
-  "6701794464592581049": "Выполнена",
-  "7297881024668946688": "Завершена"
-};
-
-watch(() => route.params.id, async (newId) => {
-  if (newId) {
-    await refetchModule()
-    setSubject()
-  }
-})
-
-watch([moduleLoading, subjectLoading], ([isModuleLoading, isSubjectLoading]) => {
+watch([moduleLoading, subjectLoading, StatusLoading], ([isModuleLoading, isSubjectLoading, isStatusLoadung]) => {
+  if (isStatusLoadung) return
+    statusOption.value = StatusResult.value.property?.meta?.options.map(item => ({
+        label: item.label,
+        id: item.id,
+        color: item.color
+    }))
+    console.log("Options ",statusOption);
   if (isModuleLoading) return;
-  loadModule();
+  if(moduleResult){
+    loadModule();
+  }
   if (isSubjectLoading) return
   setSubject()
 });
 
 const setSubject = () => {
-  subjects.value = subjectResult.value.paginate_subject.data.map(subject => ({
-    id: subject?.id,
-    type_id: subject?.type_id,
-    name: subject?.fullname?.first_name,
-    last_name: subject?.fullname?.last_name
+  subjects.value = subjectResult.value?.get_group?.subject?.map(subject => ({
+    id: subject?.object?.id,
+    name: subject?.object?.fullname?.first_name,
+    last_name: subject?.object?.fullname?.last_name
   }))
   subjectOptions.value = subjects.value.map(item => ({
     id: item.id,
@@ -122,27 +121,37 @@ const setSubject = () => {
 }
 
 const loadModule = () => {
+  console.log("module Result ",moduleResult.value);
+  
   modules.value = moduleResult.value.paginate_type1.data.map(module => {
     const statusCount = {
       assigned: 0,
       completed: 0,
       closed: 0
     };
+    const getStatusById = (statusId) => {
+      return statusOption.value.find(status => status.id === statusId) || { label: "Неизвестен", color: "gray" };
+    };
 
     const tasks = module?.responsible?.map(task => {
       const taskStatusId = task?.object?.task_status;
-      if (taskStatusId === "4641784570903815283") {
+
+      const status = getStatusById(taskStatusId);
+
+   
+      if (status.id === statusOption.value[0].id) { 
         statusCount.assigned++;
-      } else if (taskStatusId === "6701794464592581049") {
+      } else if (status.id === statusOption.value[1].id) { 
         statusCount.completed++;
-      } else if (taskStatusId === "7297881024668946688") {
+      } else if (status.id === statusOption.value[2].id) {
         statusCount.closed++;
       }
 
       return {
         id: task?.object?.id,
         name: task?.object?.name,
-        status: statusMapping[taskStatusId] || "Неизвестен"
+        status: status?.label,   
+        color: status?.color  
       };
     });
 
@@ -151,14 +160,16 @@ const loadModule = () => {
       id: module?.id,
       start_date: module?.start_date,
       end_date: module?.end_date,
+      responsible_now: module?.responsible_id?.object?.id,
       fullname: `${module?.responsible_id?.object?.fullname?.first_name}  ${module?.responsible_id?.object?.fullname?.last_name}`,
       tasks: tasks,
       statusCount: statusCount
     };
   });
-
-  createBtn.value = true
-};
+  createBtn.value = true,
+  console.log(modules.value);
+  
+}
 
 const resetInputModule = () => {
   newModule.value = {
@@ -181,7 +192,9 @@ const { mutate: queryCreate, onDone: doneCreate } = useMutation(CREATE_MODULE)
 const { mutate: createPage, onDone: donePage } = useMutation(CREATE_PAGE)
 const { mutate: createPremissionForModule, onDone: doneModulePremission } = useMutation(CREATE_PREMISSION)
 const { mutate: createPremissionForPage, onDone: donePagePremission } = useMutation(CREATE_PREMISSION)
+const { mutate: createPremissionForModulesPage, onDone: doneModulesPagePremission } = useMutation(CREATE_PREMISSION)
 
+//Создание модуля с установкой доступов Начало
 const createModule = async () => {
   const variable = {
     input: {
@@ -226,6 +239,7 @@ const createModulePremission = (resultModule) => {
     doneModulePremission((resultPremission) => {
       if (resultPremission) {
         console.log("ResultPemission Module ",resultPremission.data);
+        addModulesPagePremission()
         createModulePage(resultModule)
       }
     })
@@ -283,6 +297,29 @@ const createPagePremission = (pageResult) => {
   }
 }
 
+const addModulesPagePremission = ()=>{
+  const pagePremissionVariable = {
+    input: {
+      model_type: "page",
+      model_id: "5955448239736382426",
+      owner_type: "subject",
+      owner_id: newModule.value.responseble_id.id,
+      level: 5
+    }
+  }
+  try {
+    createPremissionForModulesPage(pagePremissionVariable)
+    doneModulePremission((modulesPageResult)=>{
+      if(modulesPageResult){
+        console.log("ModulesPageResult", modulesPageResult);
+      }
+    })
+  } catch (error) {
+    
+  }
+}
+//Создание модуля с установкой доступов Конец
+
 const resetSave = () => {
   newModule.value = null
   saveBtn.value = false
@@ -296,6 +333,7 @@ const editModule = (item) => {
   newModule.value = {
     id: item.id,
     name: item.name,
+    responsible_now: item.responsible_now,
     responseble_id: null,
     start_date: formatDateForInput(item.start_date),
     end_date: formatDateForInput(item.end_date),
@@ -305,7 +343,10 @@ const editModule = (item) => {
   createBtn.value = false
   updateBtn.value = true
 }
+
 const { mutate: fetchUpdate } = useMutation(UPDATE_MODULE)
+const {mutate: setManyPremission} = useMutation(MANY_PREMISSION_RULES)
+
 const updateModule = async () => {
   const variable = {
     input: {
@@ -319,23 +360,65 @@ const updateModule = async () => {
       end_date: formatDate(newModule.value.end_date),
     },
     id: newModule.value.id
-
   }
   console.log(variable);
   try {
-    await fetchUpdate(variable)
-    $q.notify({
-      color: 'green-4',
-      textColor: 'white',
-      icon: 'assignment_turned_in',
-      message: `Модуль "${variable.input.name}" обновлен `
-    });
-    await refetchModule()
-    updateBtn.value = false
-    newModule.value = null
+    checkPremissionTree(newModule.value.id, "object")
+      console.log(result.permissionTreeSubjects);
+        console.log(newModule.value.responsible_now);
+      const oldIdRulesObject = premissionTreeResult.value
+      console.log(oldIdRulesObject);
+      if(oldIdRulesObject){
+        createManyPremissions("object", newModule.value.id, oldIdRulesObject.permission_rule_id)
+      
+      await fetchUpdate(variable)
+      $q.notify({
+        color: 'green-4',
+        textColor: 'white',
+        icon: 'assignment_turned_in',
+        message: `Модуль "${variable.input.name}" обновлен `
+      });
+      await refetchModule()
+      updateBtn.value = false
+      newModule.value = null
+    }
   } catch (error) {
     console.log("Error update module", error);
 
+  }
+}
+
+const createManyPremissions = (modelType, modelId, oldIdRules)=>{
+  const variable = {
+    input: {
+      model_type: modelType,
+      model_id: modelId,
+      apply_to_children:false,
+      collection_to_delete:[
+         oldIdRules
+      ],
+      collection_to_create:[
+         {
+          owner_type: "subject",
+          owner_id: newModule.value.responseble_id.id,
+          level: 6
+         }
+      ]
+   }
+}
+}
+
+const checkPremissionTree = (id, type)=>{
+  const variable ={
+    modelId: id,
+    modelType: type,
+    groupId:"7911388975213131340"
+  }
+  try {
+    premissionTree(PREMISSION_TREE_SUBJECTS,variable)
+    if(!premissionTreeLoading) return
+  } catch (error) {
+    console.log("Error check premision", error);
   }
 }
 
@@ -355,33 +438,3 @@ const formatDateForInput = (dateString) => {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 };
 </script>
-
-<style>
-.create-module-btn {
-  margin: 30px 45%;
-}
-
-.save-module-btn {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.btnSpaces {
-  margin-top: 20px;
-}
-
-.module-row {
-  position: relative;
-}
-
-.edit-btn-cell {
-  position: absolute;
-  top: 20%;
-  left: -50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-</style>

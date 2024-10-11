@@ -21,7 +21,11 @@ query PaginateModule{
           }
         }
       }
-   
+    responsible{
+        object{
+          id
+        }
+      }
         level
         position
         created_at
@@ -31,13 +35,43 @@ query PaginateModule{
   }
 }
 `
-// responsible{
-//   object{
-//     id
-//     name
-//     task_status
-//   }
-// }
+
+export const PAGINATE_MODULE_WITH_STATUS = gql`
+query PaginateModule{
+  paginate_type1(
+    page: 1
+    perPage: 100
+  ) {
+    data {
+        id
+    	name
+      end_date
+      start_date
+      responsible_id{
+        object{
+          id
+          user_id
+          fullname{
+            first_name
+            last_name
+          }
+        }
+      }
+    responsible{
+        object{
+          id
+        }
+      }
+        level
+        position
+        created_at
+        updated_at
+
+    }
+  }
+}
+`
+
 export const CREATE_MODULE = gql`
 mutation CreateModule($input: create_type1_input!) {
   create_type1 (input: $input) {

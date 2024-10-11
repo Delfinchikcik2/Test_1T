@@ -57,6 +57,7 @@ const createTree = (pages) => {
     label: page.title,
     position: page.position,
     lazy: true,
+    parent_id: page?.parent_id,
     selectable: true,
     children: [],
     group_id: page.group_id,
@@ -72,6 +73,7 @@ const loadPage = () => {
     title: data.title,
     position: data.position,
     id: data.id,
+    parent_id: data?.parent_id,
     hasChildren: data.hasChild,
     group_id: data.object.id,
     is_group: data.is_group,
@@ -106,6 +108,7 @@ const loadChild = async (node) => {
         id: page.id,
         label: page.title,
         position: page.position,
+        parent_id: page.parent_id,
         lazy: true,
         selectable: true,
         group_id: page.object.id,
@@ -142,13 +145,18 @@ const loadPageInPanel = async (node) => {
     if(node.is_group){
     const id = node.group_id;
       router.push({ name: 'groupPage', params: { id } })
-  } else {
+  } else if(node.label == 'Модули'){
     const id = node.id;
     router.push({ name: 'page', params: { id } })
-  }
-
+  } else if(node.label == 'Мои задачи') 
+  {
+    const id = node.id;
+    router.push({ name: 'taskspage', params: { id } })
+  } else {
+    const id = node.id;
+    router.push({ name: 'module', params: { id } })
     
-  
+  }
 };
 
 </script>

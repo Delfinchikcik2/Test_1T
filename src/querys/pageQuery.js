@@ -22,3 +22,28 @@ mutation ($input: PageCreateInput!) {
   }
 }
 `
+export const GET_PAGE = gql`
+query getPage
+  ($id: String!){
+    page(id: $id) {
+        id
+		parent_id
+		page_type
+		title
+		content
+		icon
+		level
+		is_public
+		position
+		config
+      object{
+        id
+        type_id
+      }
+		is_block
+		created_at
+		updated_at
+    }
+}
+
+`

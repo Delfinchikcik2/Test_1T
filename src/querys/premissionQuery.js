@@ -1,5 +1,33 @@
 import gql from "graphql-tag";
 
+export const PREMISSION_TREE_SUBJECTS = gql`
+query permissionTreeSubjects(
+	$perPage: Int
+	$page: Int
+	$modelId: String!
+	$modelType: String!
+	$groupId: String!
+) {
+	permissionTreeSubjects(
+		perPage: $perPage
+		page: $page
+		modelId: $modelId
+		modelType: $modelType
+		groupId: $groupId
+	) {
+		data {
+			subject_id
+			level
+			permission_rule_id
+            name
+			surname
+      config
+		}
+	}
+}
+
+`
+
 export const CREATE_PREMISSION = gql`
 mutation permissionRuleCreate($input: PermissionRuleCreateInput!) {
 	permissionRuleCreate(input: $input) {
@@ -40,4 +68,36 @@ mutation permissionRuleUpdate($input: PermissionRuleUpdateInput!) {
 		}
 	}
 }
+`
+export const MANY_PREMISSION_RULES = gql`
+mutation manyPermissionRulesMutation($input: permissionRulesMutationInput) {
+	manyPermissionRulesMutation(input: $input) {
+		created {
+			id
+			author_id
+			level
+			model_type
+			model_id
+			config
+			owner_id
+			owner_type
+			created_at
+			updated_at
+		}
+		updated {
+			id
+			author_id
+			level
+			model_type
+			model_id
+			config
+			owner_id
+			owner_type
+			created_at
+			updated_at
+		}
+		status
+	}
+}
+
 `

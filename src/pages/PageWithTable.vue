@@ -128,13 +128,9 @@ const sendInvite = async () => {
             icon: 'assignment_turned_in',
             message: 'Пользователь добавлен'
         });
-        refetch(variable)
+        refetch({id: route.params.id})
   } catch (error) {
     console.error('Error inviting user:', error.message);
   }
 };
 </script>
-
-<style scoped>
-
-</style>
