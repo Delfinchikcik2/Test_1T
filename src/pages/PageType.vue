@@ -16,7 +16,7 @@
         <tr v-else-if="moduleError">
           <td colspan="4" class="error">Ошибка загрузки данных: {{ moduleError.message }}</td>
         </tr>
-      <tbody v-else-if="moduleResult">
+      <tbody v-else-if="modules">
         <tr v-for="module in modules" :key="module.id" class="module-row">
           <td>
             <q-btn class="edit-btn-cell" dense flat icon="edit" @click="editModule(module)" />
@@ -75,6 +75,7 @@ import { useRoute } from 'vue-router';
 import { CREATE_PREMISSION, MANY_PREMISSION_RULES, PREMISSION_TREE_SUBJECTS } from 'src/querys/premissionQuery';
 import { GET_RESPONSIBLES } from 'src/querys/groupQuery';
 import { TASK_STATUS_PROPERTI } from 'src/querys/tasksQuery';
+import { useUserStore } from 'src/stores/user-info';
 
 const $q = useQuasar()
 const route = useRoute()
@@ -86,13 +87,17 @@ const newModule = ref(null);
 const subjects = ref([])
 const subjectOptions = ref([])
 const statusOption = ref(null)
+let role = useUserStore().getRole()
+let subjectId = useUserStore().getSubjectId()
+
+
 
 const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_RESPONSIBLES, {}, {fetchPolicy: 'no-cache'});
-const { result: moduleResult, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useQuery(PAGINATE_MODULE, {}, {fetchPolicy: 'no-cache'});
+const {load: loadModules, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useLazyQuery(PAGINATE_MODULE, {}, {fetchPolicy: 'no-cache'});
 const {load: premissionTree, result: premissionTreeResult, loading: premissionTreeLoading} = useLazyQuery(PREMISSION_TREE_SUBJECTS, {}, {fetchPolicy: 'no-cache'});
 const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 
-watch([moduleLoading, subjectLoading, StatusLoading], ([isModuleLoading, isSubjectLoading, isStatusLoadung]) => {
+watch([moduleLoading, subjectLoading, StatusLoading], async([isModuleLoading, isSubjectLoading, isStatusLoadung]) => {
   if (isStatusLoadung) return
     statusOption.value = StatusResult.value.property?.meta?.options.map(item => ({
         label: item.label,
@@ -101,8 +106,25 @@ watch([moduleLoading, subjectLoading, StatusLoading], ([isModuleLoading, isSubje
     }))
     console.log("Options ",statusOption);
   if (isModuleLoading) return;
-  if(moduleResult){
-    loadModule();
+  if(role == "owner"){
+    let moduleResult = await loadModules(PAGINATE_MODULE)
+    if(moduleResult){
+      loadModule(moduleResult);
+    }
+  } else if(role == "responsible"){
+    console.log(subjectId);
+    
+    const variable = {
+            where: {
+              column: "5700735053608182363->6414058648113056419->objectId",
+              operator: "EQ",
+              value: subjectId
+  }
+}
+    let moduleResult = await loadModules(PAGINATE_MODULE, variable)
+    if(moduleResult){
+      loadModule(moduleResult);
+      }
   }
   if (isSubjectLoading) return
   setSubject()
@@ -120,10 +142,10 @@ const setSubject = () => {
   }))
 }
 
-const loadModule = () => {
-  console.log("module Result ",moduleResult.value);
+const loadModule = (result) => {
+  console.log("module Result ",result);
   
-  modules.value = moduleResult.value.paginate_type1.data.map(module => {
+  modules.value = result.paginate_type1.data?.map(module => {
     const statusCount = {
       assigned: 0,
       completed: 0,
@@ -271,7 +293,7 @@ const createModulePage = (createResult) => {
   }
 }
 
-const createPagePremission = (pageResult) => {
+const createPagePremission = async (pageResult) => {
   let pagePremissionVariable = {
     input: {
       model_type: "page",
@@ -283,12 +305,13 @@ const createPagePremission = (pageResult) => {
   }
   try{
     createPremissionForPage(pagePremissionVariable)
-    donePagePremission((resultPremission) => {
+    donePagePremission(async (resultPremission) => {
       if(resultPremission){
         console.log("ResultPremission Page", resultPremission);
+        refetchModulesData()
         newModule.value = null;
-        refetchModule()
         saveBtn.value = false
+        createBtn.value = true
       }
     })
   } catch (error){
@@ -296,6 +319,32 @@ const createPagePremission = (pageResult) => {
   }
 }
 //Создание модуля с установкой доступов Конец
+
+const refetchModulesData = async()=>{
+  if(role == "owner"){
+    let moduleResult = await refetchModule(PAGINATE_MODULE)
+    console.log(moduleResult);
+    
+    if(moduleResult){
+      loadModule(moduleResult);
+    }
+  } else if(role == "responsible"){
+    console.log(subjectId);
+    
+    const variable = {
+            where: {
+              column: "5700735053608182363->6414058648113056419->objectId",
+              operator: "EQ",
+              value: subjectId
+  }
+}
+    let moduleResult = await refetchModule(PAGINATE_MODULE, variable,{fetchPolicy: 'no-cache'});
+    if(moduleResult.data){
+      console.log("MODULEEEE",  moduleResult.data);
+      loadModule(moduleResult.data);
+      }
+    }
+}
 
 const resetSave = () => {
   newModule.value = null
@@ -360,7 +409,7 @@ const updateModule = async () => {
         });
         })
       }
-      await refetchModule()
+      await refetchModulesData()
       updateBtn.value = false
       newModule.value = null
     }

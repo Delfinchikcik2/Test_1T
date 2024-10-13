@@ -1,10 +1,11 @@
 import {gql} from 'graphql-tag'
 
 export const PAGINATE_MODULE = gql`
-query PaginateModule{
+query PaginateModule($where: ObjectPaginatorWhere){
   paginate_type1(
     page: 1
     perPage: 100
+    where: $where
   ) {
     data {
         id

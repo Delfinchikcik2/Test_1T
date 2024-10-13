@@ -41,7 +41,7 @@ let role = ''
 const data = ref({})
 const router = useRouter();
 
-const { setUserId, setToken, setUserRole } = useUserStore()
+const { setUserId, setToken, setUserRole, setSubjectId } = useUserStore()
 
 const { mutate: login, loading } = useMutation(LOGIN);
 const { load: loadSubject } = useLazyQuery(GET_SUBJECT, {}, { fetchPolicy: 'no-cache' });
@@ -123,7 +123,8 @@ const subjectLoad = async (id) => {
     try {
         const data = await loadSubject(GET_SUBJECT, variable)
         if (data) {
-            console.log(data);
+            console.log("subject result ",data);
+            setSubjectId(data.paginate_subject?.data[0]?.id)
             const groupId = data.paginate_subject?.data[0]?.group[0]?.object?.id
             if (!groupId) return
             await getRole(groupId)

@@ -7,6 +7,7 @@ export const useUserStore = defineStore("useUserinfo", () => {
   const user_id = ref('');
   const space_id = '';
   let role = ''
+  let subject_id = ''
 
   const setToken = (token) => {
     localStorage.setItem("acsess_token",token)
@@ -24,6 +25,10 @@ export const useUserStore = defineStore("useUserinfo", () => {
   const setUserRole = (role)=>{
     localStorage.setItem("role", role)
   }
+  const setSubjectId = (id)=>{
+    localStorage.setItem("subject_id", id)
+    subject_id = id
+  }
   const getSpaceId = ()=>{
     return space_id = localStorage.getItem("space_id")
   }
@@ -39,7 +44,10 @@ export const useUserStore = defineStore("useUserinfo", () => {
   }
   const getRole = ()=>{
     return role = localStorage.getItem("role")
-    }
+  }
+  const getSubjectId = ()=>{
+    return subject_id = localStorage.getItem("subject_id")
+  }
 
 
     const clearUserData = ()=>{
@@ -60,12 +68,14 @@ export const useUserStore = defineStore("useUserinfo", () => {
     setUserId,
     setSpaceId,
     setUserRole,
+    setSubjectId,
 
     getRefreshToken,
     getToken,
     getUserId,
     getSpaceId,
     getRole,
+    getSubjectId,
 
     clearUserData
   };
