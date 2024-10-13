@@ -239,7 +239,6 @@ const createModulePremission = (resultModule) => {
     doneModulePremission((resultPremission) => {
       if (resultPremission) {
         console.log("ResultPemission Module ",resultPremission.data);
-        addModulesPagePremission()
         createModulePage(resultModule)
       }
     })
@@ -296,28 +295,6 @@ const createPagePremission = (pageResult) => {
     console.log("Error create premission for page:", error.message);
   }
 }
-
-const addModulesPagePremission = ()=>{
-  const pagePremissionVariable = {
-    input: {
-      model_type: "page",
-      model_id: "5955448239736382426",
-      owner_type: "subject",
-      owner_id: newModule.value.responseble_id.id,
-      level: 5
-    }
-  }
-  try {
-    createPremissionForModulesPage(pagePremissionVariable)
-    doneModulePremission((modulesPageResult)=>{
-      if(modulesPageResult){
-        console.log("ModulesPageResult", modulesPageResult);
-      }
-    })
-  } catch (error) {
-    
-  }
-}
 //Создание модуля с установкой доступов Конец
 
 const resetSave = () => {
@@ -346,6 +323,7 @@ const editModule = (item) => {
 
 const { mutate: fetchUpdate } = useMutation(UPDATE_MODULE, {}, {fetchPolicy: 'no-cache'})
 const {mutate: setManyPremission, onDone: doneManyPremission} = useMutation(MANY_PREMISSION_RULES, {}, {fetchPolicy: 'no-cache'})
+// const {load: loadModulePage, result: pageResult, loading: pageLoading} = useLazyQuery(GET_PAGE, variable, { fetchPolicy: 'no-cache' });
 
 const updateModule = async () => {
   const variable = {
@@ -434,6 +412,16 @@ const checkPremissionTree = async (id, type)=>{
   } catch (error) {
     console.log("Error check premision", error);
   }
+}
+
+const searchModulePage = ()=>{
+  const variable = {
+        where: {
+    column: "8069307079596173140->3820285012994084460->objectId",
+    operator: "EQ",
+    value: pageResult.value.page?.object?.id
+  }
+    }
 }
 
 const formatDate = (date) => {
