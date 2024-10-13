@@ -5,8 +5,8 @@ export const useUserStore = defineStore("useUserinfo", () => {
   const token = ref('');
   const refresh_token = ref('');
   const user_id = ref('');
-  const space_id = null;
-  const role = null
+  const space_id = '';
+  let role = ''
 
   const setToken = (token) => {
     localStorage.setItem("acsess_token",token)

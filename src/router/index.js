@@ -29,16 +29,35 @@ export default route(function (/* { store, ssrContext } */) {
 
   Router.beforeEach((to) => {
     const userStore = useUserStore();
-
-    // Проверяем, требует ли маршрут авторизации
+    const userRole = userStore.getRole();
+  
     if (to.path !== '/auth' && !userStore.getToken()) {
-      // Если пользователь не авторизован, перенаправляем на страницу авторизации
-      return('/auth');
-    } else {
-      // Продолжаем навигацию
+      return '/auth';
+    }
+  
+    if (userRole === 'owner') {
       return;
     }
-  });
 
-  return Router
-})
+    const rolePaths = {
+      responsible: ['/groupPage', '/page', '/module', '/'],
+      executor: ['/groupPage', '/tasksPage', '/'],
+    };
+
+    if (rolePaths[userRole]) {
+      const isAllowed = rolePaths[userRole].some(path => to.path.startsWith(path));
+      if (!isAllowed) {
+        return '/'; 
+      }
+    }
+
+    if (!to.matched.length) {
+      return '/:catchAll(.*)*'; 
+    }
+  
+  });
+  
+  
+  return Router;
+});  
+  
