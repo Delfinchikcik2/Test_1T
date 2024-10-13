@@ -390,6 +390,7 @@ const updateModule = async () => {
   }
   console.log(variable);
   try {
+    let data = await fetchUpdate(variable)
    premissionTreeResult.value = await checkPremissionTree(newModule.value.id, "object")
     if(premissionTreeResult.value){
       console.log(premissionTreeResult.value);
@@ -400,7 +401,6 @@ const updateModule = async () => {
         
       await createManyPremissions("object", newModule.value.id, oldPremissionRule.permission_rule_id)
       doneManyPremission((result) =>{
-         fetchUpdate(variable)
         $q.notify({
           color: 'green-4',
           textColor: 'white',
@@ -455,7 +455,9 @@ const checkPremissionTree = async (id, type)=>{
     groupId:"7329570140695640028"
   }
   try {
-   premissionTreeResult.value = await premissionTree(PREMISSION_TREE_SUBJECTS,variable)
+   await premissionTree(PREMISSION_TREE_SUBJECTS,variable)
+   console.log(premissionTreeResult.value);
+   
     return premissionTreeResult.value
   
   } catch (error) {
