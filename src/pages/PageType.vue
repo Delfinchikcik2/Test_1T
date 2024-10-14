@@ -214,7 +214,6 @@ const { mutate: queryCreate, onDone: doneCreate } = useMutation(CREATE_MODULE)
 const { mutate: createPage, onDone: donePage } = useMutation(CREATE_PAGE)
 const { mutate: createPremissionForModule, onDone: doneModulePremission } = useMutation(CREATE_PREMISSION)
 const { mutate: createPremissionForPage, onDone: donePagePremission } = useMutation(CREATE_PREMISSION)
-const { mutate: createPremissionForModulesPage, onDone: doneModulesPagePremission } = useMutation(CREATE_PREMISSION)
 
 //Создание модуля с установкой доступов Начало
 const createModule = async () => {
@@ -323,10 +322,10 @@ const createPagePremission = async (pageResult) => {
 const refetchModulesData = async()=>{
   if(role == "owner"){
     let moduleResult = await refetchModule(PAGINATE_MODULE)
-    console.log(moduleResult);
+    console.log(moduleResult.data);
     
     if(moduleResult){
-      loadModule(moduleResult);
+      loadModule(moduleResult.data);
     }
   } else if(role == "responsible"){
     console.log(subjectId);

@@ -61,6 +61,7 @@ query PaginateModule{
     responsible{
         object{
           id
+          task_status
         }
       }
         level
