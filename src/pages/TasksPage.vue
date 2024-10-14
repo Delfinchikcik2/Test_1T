@@ -316,6 +316,16 @@ const editTask = (task) => {
             icon: 'warning',
             message: 'Вы не можете изменить статус этой задачи'
         });
+        }else{
+            newTask.value = {
+            id: task.id,
+            name: task.name,
+            description: task.description,
+            executor_id: task.executor_fullname,
+            default_status: getTaskStatusName(task.status),
+            old_executor: task.executor_id
+        }
+        updateBtn.value = true
         }
     } else {
         newTask.value = {
