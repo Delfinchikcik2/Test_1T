@@ -45,5 +45,18 @@ query getPage
 		updated_at
     }
 }
+`
 
+export const GET_PAGE_FOR_MODULE = gql`
+query Pages($where: PaginatorWhere){
+  pages(perPage: 15, page: 1, where: $where) { 
+    data {
+        id
+      object {
+        id
+        type_id
+      }
+    }
+  }
+}
 `

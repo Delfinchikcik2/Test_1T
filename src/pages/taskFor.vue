@@ -148,11 +148,7 @@ const loadTasks = () => {
 }
 
 const getTaskStatusName = (statusId) => {
-    console.log(statusId);
-
     const status = statusOption.value.find(item => item.id == statusId)
-    console.log(status);
-
     return status ? status.label : "Неизвестно";
 }
 
@@ -182,7 +178,7 @@ const createTask = () => {
         input: {
             name: newTask.value.name,
             description: newTask.value.description,
-            task_status: statusId(newTask.value.default_status),
+            task_status: statusId(newTask.value),
             executor: {
                 "6414058648113056419": {
                     objectId: newTask.value.executor_id.id
@@ -215,8 +211,10 @@ const createTask = () => {
 
 const statusId = (statusId) => {
     console.log(statusId);
-    const status = statusOption.value.find(item => item.label == statusId)
-    return status.id
+    const status = statusOption.value.find(item => item.label == statusId.default_status.label)
+    console.log("status", status);
+    
+    return status?.id !== undefined ? status.id : statusId.defaultSatus;
 }
 
 const { mutate: taskUpdate, onDone: doneUpdate } = useMutation(UPDATE_TASK)
@@ -224,7 +222,7 @@ const { mutate: taskUpdate, onDone: doneUpdate } = useMutation(UPDATE_TASK)
 const updateTask = () => {
     const variable = {
         input: {
-            task_status: statusId(newTask.value.default_status.label),
+            task_status: statusId(newTask.value),
             name: newTask.value.name,
             description: newTask.value.description,
             executor: {
@@ -235,7 +233,7 @@ const updateTask = () => {
         },
         id: newTask.value.id
     }
-    console.log(variable);
+    console.log("updateTask", variable);
 
     try {
         taskUpdate(variable)
@@ -287,7 +285,8 @@ const editTask = (task) => {
         name: task.name,
         description: task.description,
         executor_id: '',
-        default_status: getTaskStatusName(task.status)
+        default_status: getTaskStatusName(task.status),
+        defaultSatus: task.status
     }
     createBtn.value = false
     updateBtn.value = true

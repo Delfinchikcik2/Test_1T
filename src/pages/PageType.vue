@@ -11,12 +11,12 @@
         </tr>
       </thead>
       <tr v-if="moduleLoading">
-          <td colspan="5" class="loading">Загрузка...</td>
-        </tr>
+        <td colspan="5" class="loading">Загрузка...</td>
+      </tr>
       <tbody v-else-if="modules">
         <tr v-for="module in modules" :key="module.id" class="module-row">
           <td>
-            <q-btn class="edit-btn-cell" dense flat icon="edit" @click="editModule(module)" />
+            <q-btn v-if="owner" class="edit-btn-cell" dense flat icon="edit" @click="editModule(module)" />
             {{ module.name }}
           </td>
           <td>{{ module.fullname }}</td>
@@ -65,7 +65,7 @@ import { ref, watch } from 'vue';
 import { CREATE_MODULE, PAGINATE_MODULE, UPDATE_MODULE } from 'src/querys/moduleQuery';
 import { useLazyQuery, useMutation, useQuery } from '@vue/apollo-composable';
 import { useQuasar } from 'quasar';
-import { CREATE_PAGE } from 'src/querys/pageQuery';
+import { CREATE_PAGE, GET_PAGE_FOR_MODULE } from 'src/querys/pageQuery';
 import { useRoute } from 'vue-router';
 import { CREATE_PREMISSION, MANY_PREMISSION_RULES, PREMISSION_TREE_SUBJECTS } from 'src/querys/premissionQuery';
 import { GET_RESPONSIBLES } from 'src/querys/groupQuery';
@@ -89,39 +89,39 @@ let subjectId = useUserStore().getSubjectId()
 const owner = ref(false)
 const executor = ref(false)
 
-const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_RESPONSIBLES, {}, {fetchPolicy: 'no-cache'});
-const {load: loadModules, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useLazyQuery(PAGINATE_MODULE, {}, {fetchPolicy: 'no-cache'});
-const {load: premissionTree, result: premissionTreeResult, loading: premissionTreeLoading} = useLazyQuery(PREMISSION_TREE_SUBJECTS, {}, {fetchPolicy: 'no-cache'});
+const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_RESPONSIBLES, {}, { fetchPolicy: 'no-cache' });
+const { load: loadModules, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useLazyQuery(PAGINATE_MODULE, {}, { fetchPolicy: 'no-cache' });
+const { load: premissionTree, result: premissionTreeResult, loading: premissionTreeLoading } = useLazyQuery(PREMISSION_TREE_SUBJECTS, {}, { fetchPolicy: 'no-cache' });
 const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 
-watch([moduleLoading, subjectLoading, StatusLoading], async([isModuleLoading, isSubjectLoading, isStatusLoadung]) => {
+watch([moduleLoading, subjectLoading, StatusLoading], async ([isModuleLoading, isSubjectLoading, isStatusLoadung]) => {
   if (isStatusLoadung) return
-    statusOption.value = StatusResult.value.property?.meta?.options.map(item => ({
-        label: item.label,
-        id: item.id,
-        color: item.color
-    }))
-    console.log("Options ",statusOption);
+  statusOption.value = StatusResult.value.property?.meta?.options.map(item => ({
+    label: item.label,
+    id: item.id,
+    color: item.color
+  }))
+  console.log("Options ", statusOption);
   if (isModuleLoading) return;
-  if(role == "owner"){
+  if (role == "owner") {
     let moduleResult = await loadModules(PAGINATE_MODULE)
-    if(moduleResult){
+    if (moduleResult) {
       loadModule(moduleResult);
     }
-  } else if(role == "responsible"){
+  } else if (role == "responsible") {
     console.log(subjectId);
-    
+
     const variable = {
-            where: {
-              column: "5700735053608182363->6414058648113056419->objectId",
-              operator: "EQ",
-              value: subjectId
-  }
-}
-    let moduleResult = await loadModules(PAGINATE_MODULE, variable)
-    if(moduleResult){
-      loadModule(moduleResult);
+      where: {
+        column: "5700735053608182363->6414058648113056419->objectId",
+        operator: "EQ",
+        value: subjectId
       }
+    }
+    let moduleResult = await loadModules(PAGINATE_MODULE, variable)
+    if (moduleResult) {
+      loadModule(moduleResult);
+    }
   }
   if (isSubjectLoading) return
   setSubject()
@@ -143,8 +143,8 @@ const setSubject = () => {
 }
 
 const loadModule = (result) => {
-  console.log("module Result ",result);
-  
+  console.log("module Result ", result);
+
   modules.value = result.paginate_type1.data?.map(module => {
     return {
       name: module?.name,
@@ -157,8 +157,8 @@ const loadModule = (result) => {
     };
   });
   createBtn.value = true,
-  console.log(modules.value);
-  
+    console.log(modules.value);
+
 }
 
 const resetInputModule = () => {
@@ -202,7 +202,7 @@ const createModule = async () => {
       queryCreate(variable)
       doneCreate((resultModule) => {
         if (resultModule) {
-          console.log("ResultModule ",resultModule.data);
+          console.log("ResultModule ", resultModule.data);
           createModulePremission(resultModule.data)
         }
       })
@@ -223,17 +223,17 @@ const createModulePremission = (resultModule) => {
       level: 6
     }
   }
-  try{
+  try {
     createPremissionForModule(modulePremissionVariable)
     doneModulePremission((resultPremission) => {
       if (resultPremission) {
-        console.log("ResultPemission Module ",resultPremission.data);
+        console.log("ResultPemission Module ", resultPremission.data);
         createModulePage(resultModule)
       }
     })
-  } catch (error){
+  } catch (error) {
     console.log("Error create premission for module:", error.message);
-    
+
   }
 }
 
@@ -256,7 +256,7 @@ const createModulePage = (createResult) => {
       createPagePremission(pageResult.data)
     })
   } catch (error) {
-    console.log( "Error create page:", error.message);
+    console.log("Error create page:", error.message);
   }
 }
 
@@ -270,10 +270,10 @@ const createPagePremission = async (pageResult) => {
       level: 6
     }
   }
-  try{
+  try {
     createPremissionForPage(pagePremissionVariable)
     donePagePremission(async (resultPremission) => {
-      if(resultPremission){
+      if (resultPremission) {
         console.log("ResultPremission Page", resultPremission);
         refetchModulesData()
         newModule.value = null;
@@ -281,36 +281,36 @@ const createPagePremission = async (pageResult) => {
         createBtn.value = true
       }
     })
-  } catch (error){
+  } catch (error) {
     console.log("Error create premission for page:", error.message);
   }
 }
 //Создание модуля с установкой доступов Конец
 
-const refetchModulesData = async()=>{
-  if(role == "owner"){
+const refetchModulesData = async () => {
+  if (role == "owner") {
     let moduleResult = await refetchModule(PAGINATE_MODULE)
     console.log(moduleResult.data);
-    
-    if(moduleResult){
+
+    if (moduleResult) {
       loadModule(moduleResult.data);
     }
-  } else if(role == "responsible"){
+  } else if (role == "responsible") {
     console.log(subjectId);
-    
+
     const variable = {
-            where: {
-              column: "5700735053608182363->6414058648113056419->objectId",
-              operator: "EQ",
-              value: subjectId
-  }
-}
-    let moduleResult = await refetchModule(PAGINATE_MODULE, variable,{fetchPolicy: 'no-cache'});
-    if(moduleResult.data){
-      console.log("MODULEEEE",  moduleResult.data);
-      loadModule(moduleResult.data);
+      where: {
+        column: "5700735053608182363->6414058648113056419->objectId",
+        operator: "EQ",
+        value: subjectId
       }
     }
+    let moduleResult = await refetchModule(PAGINATE_MODULE, variable, { fetchPolicy: 'no-cache' });
+    if (moduleResult.data) {
+      console.log("MODULEEEE", moduleResult.data);
+      loadModule(moduleResult.data);
+    }
+  }
 }
 
 const resetSave = () => {
@@ -337,9 +337,12 @@ const editModule = (item) => {
   updateBtn.value = true
 }
 
-const { mutate: fetchUpdate } = useMutation(UPDATE_MODULE, {}, {fetchPolicy: 'no-cache'})
-const {mutate: setManyPremission, onDone: doneManyPremission} = useMutation(MANY_PREMISSION_RULES, {}, {fetchPolicy: 'no-cache'})
-// const {load: loadModulePage, result: pageResult, loading: pageLoading} = useLazyQuery(GET_PAGE, variable, { fetchPolicy: 'no-cache' });
+const { mutate: fetchUpdate } = useMutation(UPDATE_MODULE, {}, { fetchPolicy: 'no-cache' })
+const { mutate: setManyPremissionModule, onDone: doneManyPremissionModule } = useMutation(MANY_PREMISSION_RULES, {}, { fetchPolicy: 'no-cache' })
+const { mutate: setManyPremissionPage } = useMutation(MANY_PREMISSION_RULES, {}, { fetchPolicy: 'no-cache' })
+const { load: loadModulePage, onResult: onPageResult } = useLazyQuery(GET_PAGE_FOR_MODULE, { fetchPolicy: 'no-cache' });
+
+
 
 const updateModule = async () => {
   const variable = {
@@ -355,26 +358,18 @@ const updateModule = async () => {
     },
     id: newModule.value.id
   }
-  console.log(variable);
+  console.log("update variable ",variable);
   try {
     let data = await fetchUpdate(variable)
-   premissionTreeResult.value = await checkPremissionTree(newModule.value.id, "object")
-    if(premissionTreeResult.value){
+    premissionTreeResult.value = await checkPremissionTree(newModule.value.id, "object")
+    if (premissionTreeResult.value) {
       console.log(premissionTreeResult.value);
-        console.log(newModule.value.responsible_now);   
+      console.log(newModule.value.responsible_now);
       const oldPremissionRule = premissionTreeResult.value?.permissionTreeSubjects?.data.find(subject => subject?.subject_id == newModule.value.responsible_now)
-      if(oldPremissionRule){
-        console.log("oldRule ",oldPremissionRule);
-        
-      await createManyPremissions("object", newModule.value.id, oldPremissionRule.permission_rule_id)
-      doneManyPremission((result) =>{
-        $q.notify({
-          color: 'green-4',
-          textColor: 'white',
-          icon: 'assignment_turned_in',
-          message: `Модуль "${variable.input.name}" обновлен `
-        });
-        })
+      if (oldPremissionRule) {
+        console.log("oldRule ", oldPremissionRule);
+
+        await createManyPremissionsModule("object", newModule.value.id, oldPremissionRule.permission_rule_id)
       }
       await refetchModulesData()
       updateBtn.value = false
@@ -387,59 +382,117 @@ const updateModule = async () => {
   }
 }
 
-const createManyPremissions = async (modelType, modelId, oldIdRules)=>{
+const createManyPremissionsModule = async (modelType, modelId, oldIdRules) => {
   const variable = {
     input: {
       model_type: modelType,
       model_id: modelId,
-      apply_to_children:false,
-      collection_to_delete:[
-         oldIdRules
+      apply_to_children: false,
+      collection_to_delete: [
+        oldIdRules
       ],
-      collection_to_create:[
-         {
+      collection_to_create: [
+        {
           owner_type: "subject",
           owner_id: newModule.value.responseble_id.id,
           level: 6
-         }
+        }
       ]
-   }
+    }
   }
   console.log("Many variable", variable);
-try {
-  if(variable){
-    await setManyPremission(variable)
+  try {
+    if (variable) {
+      await setManyPremissionModule(variable)
+      await searchModulePage()
+    }
+  } catch (error) {
+    console.log("Error createManyPremissions", error);
   }
-} catch (error) {
-  console.log("Error createManyPremissions", error);
-}
 }
 
-const checkPremissionTree = async (id, type)=>{
-  const variable ={
+const checkPremissionTree = async (id, type) => {
+  const variable = {
     modelId: id,
     modelType: type,
-    groupId:"7329570140695640028"
+    groupId: "7329570140695640028"
   }
   try {
-   await premissionTree(PREMISSION_TREE_SUBJECTS,variable)
-   console.log(premissionTreeResult.value);
-   
+    await premissionTree(PREMISSION_TREE_SUBJECTS, variable)
+    console.log(premissionTreeResult.value);
+
     return premissionTreeResult.value
-  
+
   } catch (error) {
     console.log("Error check premision", error);
   }
 }
 
-const searchModulePage = ()=>{
+const searchModulePage = async () => {
   const variable = {
-        where: {
-    column: "8069307079596173140->3820285012994084460->objectId",
-    operator: "EQ",
-    value: pageResult.value.page?.object?.id
-  }
+    where: {
+      column: "object->id",
+      operator: "EQ",
+      value: newModule.value.id
     }
+  }
+  console.log("module page variable ", variable);
+  try {
+    const result = await loadModulePage(GET_PAGE_FOR_MODULE, variable)
+     if(result){
+      console.log("loadModulePage", result);
+      const pageId = result.pages?.data[0]?.id
+      console.log("pageId ", pageId);
+      if (pageId) {
+        const pagePermission = await checkPremissionTree(pageId, "page")
+        console.log("pagePermission", pagePermission);
+        const oldPremissionRule = premissionTreeResult.value?.permissionTreeSubjects?.data.find(subject => subject?.subject_id == newModule.value.responsible_now)
+        if (oldPremissionRule) {
+          console.log("oldRule page ", oldPremissionRule);
+          await createManyPremissionsPage("page", pageId, oldPremissionRule.permission_rule_id)
+          $q.notify({
+            color: 'green-4',
+            textColor: 'white',
+            icon: 'assignment_turned_in',
+            message: `Модуль "${newModule.value.name}" обновлен `
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.log("Error search module page", error);
+  }
+
+}
+
+const createManyPremissionsPage = async (modelType, modelId, oldIdRules) => {
+  const variable = {
+    input: {
+      model_type: modelType,
+      model_id: modelId,
+      apply_to_children: false,
+      collection_to_delete: [
+        oldIdRules
+      ],
+      collection_to_create: [
+        {
+          owner_type: "subject",
+          owner_id: newModule.value.responseble_id.id,
+          level: 6
+        }
+      ]
+    }
+  }
+  console.log("Many Page permission variable", variable);
+  try {
+    if (variable) {
+     const result =  await setManyPremissionPage(variable)
+     console.log("Many page result",result);
+     
+    }
+  } catch (error) {
+    console.log("Error createManyPremissions", error);
+  }
 }
 
 const formatDate = (date) => {
