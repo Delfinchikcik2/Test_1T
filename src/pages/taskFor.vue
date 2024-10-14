@@ -39,8 +39,9 @@
                     </td>
                     <td>
                         <q-input v-if="saveBtn" v-model="newTask.default_status" label="Статус" type="text" disable />
-                        <q-select v-if="updateBtn" v-model="newTask.default_status" :options="statusOption"
-                            option-value="id" option-label="label" label="Статус" />
+                        <q-select v-if="updateBtn" v-model="newTask.default_status" :options="filteredStatusOption"
+                            option-value="id" option-label="label" label="Статус" 
+                            :disable="role == 'responsible' && newTask.default_status != 'Выполнена'"/>
                     </td>
                 </tr>
             </tbody>
@@ -66,6 +67,7 @@ import { GET_EXECUTOR, GET_GROUP_WITH_SUBJECT } from 'src/querys/groupQuery';
 import { GET_PAGE } from 'src/querys/pageQuery';
 import { CREATE_PREMISSION, MANY_PREMISSION_RULES } from 'src/querys/premissionQuery';
 import { CREATE_TASK, PAGINATE_TASKS, TASK_STATUS_PROPERTI, UPDATE_TASK } from 'src/querys/tasksQuery';
+import { useUserStore } from 'src/stores/user-info';
 import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router'
 
@@ -75,9 +77,11 @@ const createBtn = ref(false);
 const saveBtn = ref(false)
 const updateBtn = ref(false)
 const statusOption = ref([])
+const filteredStatusOption = ref([])
 const subjects = ref(null)
 const executorOptions = ref(null)
 const router = useRoute()
+const role = useUserStore().getRole()
 let variable = ref({
     id: router.params.id
 })
@@ -87,7 +91,7 @@ watch(() => router.params.id, (newId) => {
 })
 
 const { result: pageResult, loading: pageLoading, refetch } = useQuery(GET_PAGE, variable, { fetchPolicy: 'no-cache' });
-const { load: paginateTasks, result: tasksResult, loading: tasksLoading, refetch: refetchTasks } = useLazyQuery(PAGINATE_TASKS, {}, { fetchPolicy: 'no-cache' });
+const { load: paginateTasks, result: tasksResult, loading: tasksLoading, refetch: refetchTasks, error: tasksError } = useLazyQuery(PAGINATE_TASKS, {}, { fetchPolicy: 'no-cache' });
 const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_EXECUTOR, {}, { fetchPolicy: 'no-cache' });
 
@@ -198,33 +202,6 @@ const createTask = () => {
         doneCreate((taskResult) => {
             console.log(taskResult);
             if (taskResult) {
-                createManyPremissionSubject(taskResult)
-            }
-        })
-    } catch (error) {
-        console.log("Error create task", error);
-    }
-}
-
-const createManyPremissionSubject = (resultCreate) => {
-    const variable = {
-        input: {
-            model_type: "object",
-            model_id: resultCreate?.data?.create_type2?.recordId,
-            collection_to_create: [
-                {
-                    owner_type: "subject",
-                    owner_id: newTask.value.executor_id.id,
-                    level: 5
-                }
-            ]
-        }
-    }
-    console.log("many premission variable", variable);
-    try {
-        setManyRules(variable);
-        doneManyRules((result) => {
-            if (result) {
                 refetchTaskPaginator()
             }
             saveBtn.value = false
@@ -232,7 +209,7 @@ const createManyPremissionSubject = (resultCreate) => {
             newTask.value = null
         })
     } catch (error) {
-        console.log("Error create premision", error);
+        console.log("Error create task", error);
     }
 }
 
@@ -298,6 +275,13 @@ const resetSave = () => {
 }
 
 const editTask = (task) => {
+    if (role == "responsible") {
+        filteredStatusOption.value = statusOption.value.filter(status => status.label == "Завершена");
+        console.log("filteredOption", filteredStatusOption.value);
+
+    } else {
+        filteredStatusOption.value = statusOption.value;
+    }
     newTask.value = {
         id: task.id,
         name: task.name,

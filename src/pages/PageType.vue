@@ -11,10 +11,7 @@
         </tr>
       </thead>
       <tr v-if="moduleLoading">
-          <td colspan="4" class="loading">Загрузка...</td>
-        </tr>
-        <tr v-else-if="moduleError">
-          <td colspan="4" class="error">Ошибка загрузки данных: {{ moduleError.message }}</td>
+          <td colspan="5" class="loading">Загрузка...</td>
         </tr>
       <tbody v-else-if="modules">
         <tr v-for="module in modules" :key="module.id" class="module-row">
@@ -26,9 +23,7 @@
           <td>{{ module.start_date }}</td>
           <td>{{ module.end_date }}</td>
           <td>
-            Назначено задач: {{ module.statusCount.assigned }}<br>
-            Выполнено задач: {{ module.statusCount.completed }}<br>
-            Завершено задач: {{ module.statusCount.closed }}
+            <ModuleStatus :tasks="module.tasks" :statusOptions="statusOption" />
           </td>
         </tr>
         <tr v-if="newModule">
@@ -49,9 +44,9 @@
           </td>
         </tr>
       </tbody>
-      <div v-else class="no-data">Нет данных для отображения.</div>
+      <tbody v-else-if="moduleError" class="no-data">Нет данных для отображения.</tbody>
     </table>
-    <div v-if="createBtn" class="create-module-btn">
+    <div v-if="createBtn && owner" class="create-module-btn">
       <q-btn label="Создать модуль" color="secondary" @click="addNewModuleRow" />
     </div>
     <div v-if="saveBtn" class="save-module-btn">
@@ -76,6 +71,7 @@ import { CREATE_PREMISSION, MANY_PREMISSION_RULES, PREMISSION_TREE_SUBJECTS } fr
 import { GET_RESPONSIBLES } from 'src/querys/groupQuery';
 import { TASK_STATUS_PROPERTI } from 'src/querys/tasksQuery';
 import { useUserStore } from 'src/stores/user-info';
+import ModuleStatus from 'src/components/ModuleStatus.vue';
 
 const $q = useQuasar()
 const route = useRoute()
@@ -90,7 +86,8 @@ const statusOption = ref(null)
 let role = useUserStore().getRole()
 let subjectId = useUserStore().getSubjectId()
 
-
+const owner = ref(false)
+const executor = ref(false)
 
 const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_RESPONSIBLES, {}, {fetchPolicy: 'no-cache'});
 const {load: loadModules, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useLazyQuery(PAGINATE_MODULE, {}, {fetchPolicy: 'no-cache'});
@@ -128,6 +125,9 @@ watch([moduleLoading, subjectLoading, StatusLoading], async([isModuleLoading, is
   }
   if (isSubjectLoading) return
   setSubject()
+
+  if (role == "owner") owner.value = true
+  if (role == "executor") executor.value = true
 });
 
 const setSubject = () => {
@@ -146,37 +146,6 @@ const loadModule = (result) => {
   console.log("module Result ",result);
   
   modules.value = result.paginate_type1.data?.map(module => {
-    const statusCount = {
-      assigned: 0,
-      completed: 0,
-      closed: 0
-    };
-    const getStatusById = (statusId) => {
-      return statusOption.value.find(status => status.id === statusId) || { label: "Неизвестен", color: "gray" };
-    };
-
-    const tasks = module?.responsible?.map(task => {
-      const taskStatusId = task?.object?.task_status;
-
-      const status = getStatusById(taskStatusId);
-
-   
-      if (status.id === statusOption.value[0].id) { 
-        statusCount.assigned++;
-      } else if (status.id === statusOption.value[1].id) { 
-        statusCount.completed++;
-      } else if (status.id === statusOption.value[2].id) {
-        statusCount.closed++;
-      }
-
-      return {
-        id: task?.object?.id,
-        name: task?.object?.name,
-        status: status?.label,   
-        color: status?.color  
-      };
-    });
-
     return {
       name: module?.name,
       id: module?.id,
@@ -184,8 +153,7 @@ const loadModule = (result) => {
       end_date: module?.end_date,
       responsible_now: module?.responsible_id?.object?.id,
       fullname: `${module?.responsible_id?.object?.fullname?.first_name}  ${module?.responsible_id?.object?.fullname?.last_name}`,
-      tasks: tasks,
-      statusCount: statusCount
+      tasks: module?.responsible,
     };
   });
   createBtn.value = true,

@@ -56,6 +56,7 @@ export const useUserStore = defineStore("useUserinfo", () => {
       localStorage.removeItem("user_id");
       localStorage.removeItem("space_id");
       localStorage.removeItem("role");
+      localStorage.removeItem("subject_id");
     }
   return {
     token,

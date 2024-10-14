@@ -25,6 +25,7 @@ query PaginateModule($where: ObjectPaginatorWhere){
     responsible{
         object{
           id
+          task_status
         }
       }
         level
