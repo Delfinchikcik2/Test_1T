@@ -40,7 +40,7 @@
   import { ref } from 'vue';
   import { useQuery } from '@vue/apollo-composable';
   import { PAGINATE_MODULE } from 'src/querys/moduleQuery';
-  import ModuleStatus from './ModuleStatus.vue'; // Подключение компонента статусов
+  import ModuleStatus from './ModuleStatus.vue';
   
   const { result, loading, error } = useQuery(PAGINATE_MODULE);
   const modules = ref([]);
@@ -52,7 +52,6 @@
   });
   
   const editModule = (module) => {
-    // Передать данные в форму редактирования
   };
   </script>
   

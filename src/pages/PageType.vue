@@ -92,6 +92,7 @@ const executor = ref(false)
 const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_RESPONSIBLES, {}, { fetchPolicy: 'no-cache' });
 const { load: loadModules, loading: moduleLoading, error: moduleError, refetch: refetchModule } = useLazyQuery(PAGINATE_MODULE, {}, { fetchPolicy: 'no-cache' });
 const { load: premissionTree, result: premissionTreeResult, loading: premissionTreeLoading } = useLazyQuery(PREMISSION_TREE_SUBJECTS, {}, { fetchPolicy: 'no-cache' });
+const { load: premissionTreePage, result: premissionTreeResultPage, loading: premissionTreeLoadingPage } = useLazyQuery(PREMISSION_TREE_SUBJECTS, {}, { fetchPolicy: 'no-cache' });
 const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 
 watch([moduleLoading, subjectLoading, StatusLoading], async ([isModuleLoading, isSubjectLoading, isStatusLoadung]) => {
@@ -395,7 +396,10 @@ const createManyPremissionsModule = async (modelType, modelId, oldIdRules) => {
         {
           owner_type: "subject",
           owner_id: newModule.value.responseble_id.id,
-          level: 6
+          level: 6,
+          config:{
+            apply_to_type: false
+          }
         }
       ]
     }
@@ -418,9 +422,7 @@ const checkPremissionTree = async (id, type) => {
     groupId: "7329570140695640028"
   }
   try {
-    await premissionTree(PREMISSION_TREE_SUBJECTS, variable)
-    console.log(premissionTreeResult.value);
-
+    await premissionTree(PREMISSION_TREE_SUBJECTS, variable);
     return premissionTreeResult.value
 
   } catch (error) {
@@ -444,12 +446,12 @@ const searchModulePage = async () => {
       const pageId = result.pages?.data[0]?.id
       console.log("pageId ", pageId);
       if (pageId) {
-        const pagePermission = await checkPremissionTree(pageId, "page")
+        const pagePermission = await checkPremissionTreePage(pageId, "page")
         console.log("pagePermission", pagePermission);
-        const oldPremissionRule = premissionTreeResult.value?.permissionTreeSubjects?.data.find(subject => subject?.subject_id == newModule.value.responsible_now)
-        if (oldPremissionRule) {
-          console.log("oldRule page ", oldPremissionRule);
-          await createManyPremissionsPage("page", pageId, oldPremissionRule.permission_rule_id)
+        const oldPremissionRulePage = pagePermission.permissionTreeSubjects?.data.find(subject => subject?.subject_id == newModule.value.responsible_now)
+        if (oldPremissionRulePage) {
+          console.log("oldRule page ", oldPremissionRulePage);
+          await createManyPremissionsPage("page", pageId, oldPremissionRulePage.permission_rule_id)
           $q.notify({
             color: 'green-4',
             textColor: 'white',
@@ -492,6 +494,21 @@ const createManyPremissionsPage = async (modelType, modelId, oldIdRules) => {
     }
   } catch (error) {
     console.log("Error createManyPremissions", error);
+  }
+}
+const checkPremissionTreePage = async (id, type) => {
+  const variable = {
+    modelId: id,
+    modelType: type,
+    groupId: "7329570140695640028"
+  }
+  try {
+   const newTRee = await premissionTreePage(PREMISSION_TREE_SUBJECTS, variable)
+   if (!premissionTreeLoadingPage) return 
+     console.log("newTRee ",newTRee);
+     return newTRee   
+  } catch (error) {
+    console.log("Error check premision", error);
   }
 }
 
