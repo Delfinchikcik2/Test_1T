@@ -1,72 +1,32 @@
 <template>
     <q-page>
-        <table class="styled-table">
-            <thead>
-                <tr>
-                    <th>Название</th>
-                    <th>Описание</th>
-                    <th>Исполнитель</th>
-                    <th>Статус</th>
-                </tr>
-            </thead>
-            <tr v-if="tasksLoading">
-                <td colspan="4" class="loading">Загрузка...</td>
-            </tr>
-            <tr v-else-if="tasksError">
-                <td colspan="4" class="error">Ошибка загрузки данных: {{ moduleError.message }}</td>
-            </tr>
-            <tbody v-else-if="tasksResult && statusOption.length > 1">
-                <tr v-for="task in tasks" :key="task.id" :style="{ backgroundColor: getTaskColor(task.status) }"
-                    class="module-row">
-                    <td>
-                        <q-btn class="edit-btn-cell" dense flat icon="edit" @click="editTask(task)" />
-                        {{ task.name }}
-                    </td>
-                    <td>{{ task.description }}</td>
-                    <td>{{ task.executor_fullname }}</td>
-                    <td>{{ getTaskStatusName(task.status) }}</td>
-                </tr>
-                <tr v-if="newTask && executor">
-                    <td>
-                        <q-input v-model="newTask.name" label="Название" disable />
-                    </td>
-                    <td>
-                        <q-input v-model="newTask.description" label="Описание" type="text" disable />
-                    </td>
-                    <td>
-                        <q-select v-model="newTask.executor_id" :options="executorOptions" option-value="id"
-                            option-label="fullname" label="Исполнитель" disable />
-                    </td>
-                    <td>
-                        <q-select v-if="updateBtn" v-model="newTask.default_status" :options="filteredStatusOptions"
-                            option-value="id" option-label="label" label="Статус" />
-                    </td>
-                </tr>
-                <tr v-if="newTask && owner">
-                    <td>
-                        <q-input v-model="newTask.name" label="Название" />
-                    </td>
-                    <td>
-                        <q-input v-model="newTask.description" label="Описание" type="text" />
-                    </td>
-                    <td>
-                        <q-select v-model="newTask.executor_id" :options="executorOptions" option-value="id"
-                            option-label="fullname" label="Исполнитель" />
-                    </td>
-                    <td>
-                        <q-select v-if="updateBtn" v-model="newTask.default_status" :options="filteredStatusOptions"
-                            option-value="id" option-label="label" label="Статус" />
-                    </td>
-                </tr>
-            </tbody>
-            <div v-else class="no-data">Нет данных для отображения.</div>
-        </table>
-        <div v-if="updateBtn" class="save-module-btn">
-            <q-btn class="btnSpaces" label="Обновить статус" color="green" @click="updateTaskStatus" />
-            <q-btn class="btnSpaces" label="Отмена" color="red" @click="resetSave" />
-        </div>
+      <task-table>
+        <template v-if="tasksLoading">
+          <tr>
+            <td colspan="4" class="loading">Загрузка...</td>
+          </tr>
+        </template>
+        <template v-else-if="tasksError">
+          <tr>
+            <td colspan="4" class="error">Ошибка загрузки данных: {{ tasksError.message }}</td>
+          </tr>
+        </template>
+        <template v-else-if="tasksResult && statusOption.length > 1">
+          <task-row v-for="task in tasks" :key="task.id" :task="task" :editTask="editTask"
+                    :getTaskColor="getTaskColor" :getTaskStatusName="getTaskStatusName" />
+          <task-form v-if="newTask && executor" :newTask="newTask" :executorOptions="executorOptions"
+                     :filteredStatusOptions="filteredStatusOptions" :isDisabled="true" />
+          <task-form v-if="newTask && owner" :newTask="newTask" :executorOptions="executorOptions"
+                     :filteredStatusOptions="filteredStatusOptions" :updateBtn="updateBtn" :isDisabled="false" />
+        </template>
+        <div v-else class="no-data">Нет данных для отображения.</div>
+      </task-table>
+      <div v-if="updateBtn" class="save-module-btn">
+        <q-btn class="btnSpaces" label="Обновить статус" color="green" @click="updateTaskStatus" />
+        <q-btn class="btnSpaces" label="Отмена" color="red" @click="resetSave" />
+      </div>
     </q-page>
-</template>
+  </template>
 
 <script setup>
 import { useMutation, useQuery, useLazyQuery } from '@vue/apollo-composable';
@@ -76,6 +36,9 @@ import { MANY_PREMISSION_RULES, PREMISSION_TREE_SUBJECTS } from 'src/querys/prem
 import { PAGINATE_TASKS, TASK_STATUS_PROPERTI, UPDATE_TASK } from 'src/querys/tasksQuery';
 import { useUserStore } from 'src/stores/user-info';
 import { ref, watch } from 'vue';
+import TaskTable from 'src/components/TaskTable.vue';
+import TaskRow from 'src/components/TaskRow.vue';
+import TaskForm from 'src/components/TaskForm.vue';
 
 const $q = useQuasar()
 const tasks = ref([])
