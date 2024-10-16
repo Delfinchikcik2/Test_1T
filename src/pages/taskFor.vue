@@ -1,65 +1,32 @@
 <template>
     <q-page>
-        <table class="styled-table">
-            <thead>
-                <tr>
-                    <th>Название</th>
-                    <th>Описание</th>
-                    <th>Исполнитель</th>
-                    <th>Статус</th>
-                </tr>
-            </thead>
-            <tr v-if="tasksLoading">
-                <td colspan="4" class="loading">Загрузка...</td>
-            </tr>
-            <tr v-else-if="tasksError">
-                <td colspan="4" class="error">Ошибка загрузки данных: {{ moduleError.message }}</td>
-            </tr>
-            <tbody v-else-if="tasksResult && statusOption.length > 1">
-                <tr v-for="task in tasks" :key="task.id" :style="{ backgroundColor: getTaskColor(task.status) }"
-                    class="module-row">
-                    <td>
-                        <q-btn class="edit-btn-cell" dense flat icon="edit" @click="editTask(task)" />
-                        {{ task.name }}
-                    </td>
-                    <td>{{ task.description }}</td>
-                    <td>{{ task.executor_fullname }}</td>
-                    <td>{{ getTaskStatusName(task.status) }}</td>
-                </tr>
-                <tr v-if="newTask">
-                    <td>
-                        <q-input v-model="newTask.name" label="Название" />
-                    </td>
-                    <td>
-                        <q-input v-model="newTask.description" label="Описание" type="text" />
-                    </td>
-                    <td>
-                        <q-select v-model="newTask.executor_id" :options="executorOptions" option-value="id"
-                            option-label="fullname" label="Исполнитель" />
-                    </td>
-                    <td>
-                        <q-input v-if="saveBtn" v-model="newTask.default_status" label="Статус" type="text" disable />
-                        <q-select v-if="updateBtn" v-model="newTask.default_status" :options="filteredStatusOption"
-                            option-value="id" option-label="label" label="Статус" 
-                            :disable="role == 'responsible' && newTask.default_status != 'Выполнена'"/>
-                    </td>
-                </tr>
-            </tbody>
-            <div v-else class="no-data">Нет данных для отображения.</div>
-        </table>
-        <div v-if="createBtn" class="create-module-btn">
-            <q-btn label="Создать задачу" color="secondary" @click="addNewTasksRow" />
-        </div>
-        <div v-if="saveBtn" class="save-module-btn">
-            <q-btn class="btnSpaces" label="Создать задачу" color="green" @click="createTask" />
-            <q-btn class="btnSpaces" label="Отмена" color="red" @click="resetSave" />
-        </div>
-        <div v-if="updateBtn" class="save-module-btn">
-            <q-btn class="btnSpaces" label="Обновить задачу" color="green" @click="updateTask" />
-            <q-btn class="btnSpaces" label="Отмена" color="red" @click="resetSave" />
-        </div>
+      <task-table>
+        <template v-if="tasksLoading">
+          <tr>
+            <td colspan="4" class="loading">Загрузка...</td>
+          </tr>
+        </template>
+        <template v-else-if="tasksError">
+          <tr>
+            <td colspan="4" class="error">Ошибка загрузки данных: {{ tasksError.message }}</td>
+          </tr>
+        </template>
+        <template v-else-if="tasksResult && statusOption.length > 1">
+          <task-row v-for="task in tasks" :key="task.id" :task="task" :editTask="editTask"
+                    :getTaskColor="getTaskColor" :getTaskStatusName="getTaskStatusName" />
+          <task-form v-if="newTask && responsible" :newTask="newTask" :executorOptions="executorOptions"
+                     :filteredStatusOptions="filteredStatusOptions" :isDisabled="true"  @update:newTask="updateNewTask"/>
+          <task-form v-if="newTask && role == 'owner'" :newTask="newTask" :executorOptions="executorOptions"
+                     :filteredStatusOptions="filteredStatusOption" :updateBtn="updateBtn" :isDisabled="false"  @update:newTask="updateNewTask"/>
+        </template>
+        <div v-else class="no-data">Нет данных для отображения.</div>
+      </task-table>
+      <div v-if="updateBtn" class="save-module-btn">
+        <q-btn class="btnSpaces" label="Обновить статус" color="green" @click="updateTask" />
+        <q-btn class="btnSpaces" label="Отмена" color="red" @click="resetSave" />
+      </div>
     </q-page>
-</template>
+  </template>
 
 <script setup>
 import { useMutation, useQuery, useLazyQuery } from '@vue/apollo-composable';
@@ -70,6 +37,9 @@ import { CREATE_TASK, PAGINATE_TASKS, TASK_STATUS_PROPERTI, UPDATE_TASK } from '
 import { useUserStore } from 'src/stores/user-info';
 import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router'
+import TaskTable from 'src/components/TaskTable.vue';
+import TaskRow from 'src/components/TaskRow.vue';
+import TaskForm from 'src/components/TaskForm.vue';
 
 const tasks = ref([])
 const newTask = ref(null)
@@ -95,7 +65,9 @@ const { load: paginateTasks, result: tasksResult, loading: tasksLoading, refetch
 const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_EXECUTOR, {}, { fetchPolicy: 'no-cache' });
 
-
+const updateNewTask = (updatedTask) => {
+  newTask.value = updatedTask;
+};
 
 watch([pageLoading, tasksLoading, StatusLoading, subjectLoading], async ([isPageLoading, isTasksLoading, isStatusLoadung, isSubjectLoading]) => {
     if (isPageLoading) return
@@ -158,8 +130,6 @@ const getTaskColor = (statusId) => {
 }
 
 const { mutate: taskCreate, onDone: doneCreate } = useMutation(CREATE_TASK);
-const { mutate: createPremissionForTasksPage, onDone: doneTasksPagePremission } = useMutation(CREATE_PREMISSION);
-const { mutate: setManyRules, onDone: doneManyRules } = useMutation(MANY_PREMISSION_RULES)
 
 const refetchTaskPaginator = () => {
     const variable = {
