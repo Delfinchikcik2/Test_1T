@@ -28,44 +28,17 @@
       </tbody>
       <div v-else class="no-data">Нет данных для отображения.</div>
     </table>
-    <q-dialog v-model="invitePopUp" :position="position" class="float-center">
-      <q-card class="q-mx-auto q-mt-xl">
-        <div class="q-pa-md" style="max-width: 600px">
-          <div class="inviteForm_title">Приглашение нового пользователя в группу</div>
-          <q-form @submit="sendInvite" @reset="onReset" class="q-gutter-md">
-
-            <q-input filled v-model="name" label="Имя" hint="Имя пользователя" lazy-rules
-              :rules="[val => val && val.length > 0 || 'Вы ничего не ввели']" />
-              
-              <q-input filled v-model="surname" label="Фамилия" hint="Фамилия пользователя" lazy-rules
-              :rules="[val => val && val.length > 0 || 'Вы ничего не ввели']" />
-
-            <q-input filled type="email" v-model="email" label="E-mail" hint="Email пользователя" lazy-rules :rules="[
-              val => val !== null && val !== '' || 'Введите что-то',
-              val => /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(val) || 'Введите корректрный email'
-            ]" />
-
-            <div class="q-mt-md">
-              <q-btn label="пригласить" type="submit" color="primary" />
-              <q-btn label="Очистить поля" type="reset" color="primary" flat class="q-ml-sm" />
-            </div>
-          </q-form>
-
-        </div>
-      </q-card>
-    </q-dialog>
+    <invite-user-form v-model:invitePopUp="invitePopUp" @invite-success="onInviteSuccess" @reset="onReset" />
   </q-page>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
 import { GET_GROUP_WITH_SUBJECT } from 'src/querys/groupQuery';
-import { INVITE_USER_IN_GROUP } from 'src/querys/mutations';
-import { useQuery,useMutation } from '@vue/apollo-composable';
+import { useQuery} from '@vue/apollo-composable';
 import { useRoute } from 'vue-router';
-import { useQuasar } from 'quasar';
+import InviteUserForm from 'src/components/InviteUserForm.vue';
 
-const $q = useQuasar()
 const route = useRoute()
 let variable = ref({
   id: route.params.id
@@ -77,21 +50,10 @@ watch(() => route.params.id, (newId) => {
 
 const groupSubject = ref()
 const invitePopUp = ref(false)
-const position = ref("standard")
-const name = ref('')
-const surname = ref('')
-const email = ref('')
-
-const onReset= ()=>{
-  name.value = ''
-  surname.value = ''
-  email.value = ''
-}
 
 const { result: groupResult, loading: groupLoading, error: groupError, refetch } = useQuery(GET_GROUP_WITH_SUBJECT, variable, {
   fetchPolicy: 'no-cache'
 });
-const { mutate: inviteUser} = useMutation(INVITE_USER_IN_GROUP);
 
 watch(groupLoading, (isgroupLoading) => {
   if (isgroupLoading) return;
@@ -109,28 +71,11 @@ const loadGroupSybject = () => {
     }))
   }))
 }
-const sendInvite = async () => {
-  const inviteVariable = {
-    input: {
-      name: name.value,
-      surname: surname.value,
-      email: email.value,
-      group_id: route.params.id,
-    }
-  };
+const onInviteSuccess = () => {
+  refetch();
+};
 
-  try {
-    await inviteUser(inviteVariable);
-    invitePopUp.value = false;
-        $q.notify({
-            color: 'green-4',
-            textColor: 'white',
-            icon: 'assignment_turned_in',
-            message: 'Пользователь добавлен'
-        });
-        refetch({id: route.params.id})
-  } catch (error) {
-    console.error('Error inviting user:', error.message);
-  }
+const onReset = () => {
+  console.log("Form reset");
 };
 </script>
