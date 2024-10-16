@@ -15,9 +15,9 @@
           <task-row v-for="task in tasks" :key="task.id" :task="task" :editTask="editTask"
                     :getTaskColor="getTaskColor" :getTaskStatusName="getTaskStatusName" />
           <task-form v-if="newTask && executor" :newTask="newTask" :executorOptions="executorOptions"
-                     :filteredStatusOptions="filteredStatusOptions" :isDisabled="true" />
+                     :filteredStatusOptions="filteredStatusOptions" :isDisabled="true"  @update:newTask="updateNewTask"/>
           <task-form v-if="newTask && owner" :newTask="newTask" :executorOptions="executorOptions"
-                     :filteredStatusOptions="filteredStatusOptions" :updateBtn="updateBtn" :isDisabled="false" />
+                     :filteredStatusOptions="filteredStatusOptions" :updateBtn="updateBtn" :isDisabled="false"  @update:newTask="updateNewTask"/>
         </template>
         <div v-else class="no-data">Нет данных для отображения.</div>
       </task-table>
@@ -59,6 +59,9 @@ const { load: fetchTasks, result: tasksResult, loading: tasksLoading, error: tas
 const { result: StatusResult, loading: StatusLoading } = useQuery(TASK_STATUS_PROPERTI, {}, { fetchPolicy: 'no-cache' });
 const { result: subjectResult, loading: subjectLoading, error: subjectError } = useQuery(GET_EXECUTOR, {}, { fetchPolicy: 'no-cache' });
 
+const updateNewTask = (updatedTask) => {
+  newTask.value = updatedTask;
+};
 
 watch([tasksLoading, StatusLoading, subjectLoading], async ([isTasksLoading, isStatusLoadung, isSubjectLoading]) => {
     if (isTasksLoading) return
