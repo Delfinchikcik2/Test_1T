@@ -14,13 +14,20 @@
         <template v-else-if="tasksResult && statusOption.length > 1">
           <task-row v-for="task in tasks" :key="task.id" :task="task" :editTask="editTask"
                     :getTaskColor="getTaskColor" :getTaskStatusName="getTaskStatusName" />
-          <task-form v-if="newTask && responsible" :newTask="newTask" :executorOptions="executorOptions"
-                     :filteredStatusOptions="filteredStatusOptions" :isDisabled="true"  @update:newTask="updateNewTask"/>
-          <task-form v-if="newTask && role == 'owner'" :newTask="newTask" :executorOptions="executorOptions"
-                     :filteredStatusOptions="filteredStatusOption" :updateBtn="updateBtn" :isDisabled="false"  @update:newTask="updateNewTask"/>
+          <task-form v-if="newTask && role == 'responsible'" :newTask="newTask" :executorOptions="executorOptions" :save-btn="saveBtn"
+                     :filteredStatusOptions="filteredStatusOption" :isDisabled="statusDisabled"  @update:newTask="updateNewTask"/>
+          <task-form v-if="newTask && role == 'owner'" :newTask="newTask" :executorOptions="executorOptions" :save-btn="saveBtn"
+                     :filteredStatusOptions="filteredStatusOption" :updateBtn="updateBtn"  @update:newTask="updateNewTask"/>
         </template>
         <div v-else class="no-data">Нет данных для отображения.</div>
       </task-table>
+      <div v-if="createBtn" class="create-module-btn">
+            <q-btn label="Создать задачу" color="secondary" @click="addNewTasksRow" />
+        </div>
+        <div v-if="saveBtn" class="save-module-btn">
+            <q-btn class="btnSpaces" label="Создать задачу" color="green" @click="createTask" />
+            <q-btn class="btnSpaces" label="Отмена" color="red" @click="resetSave" />
+        </div>
       <div v-if="updateBtn" class="save-module-btn">
         <q-btn class="btnSpaces" label="Обновить статус" color="green" @click="updateTask" />
         <q-btn class="btnSpaces" label="Отмена" color="red" @click="resetSave" />
@@ -50,6 +57,7 @@ const statusOption = ref([])
 const filteredStatusOption = ref([])
 const subjects = ref(null)
 const executorOptions = ref(null)
+const statusDisabled = ref(false)
 const router = useRoute()
 const role = useUserStore().getRole()
 let variable = ref({
@@ -246,7 +254,7 @@ const editTask = (task) => {
     if (role == "responsible") {
         filteredStatusOption.value = statusOption.value.filter(status => status.label == "Завершена");
         console.log("filteredOption", filteredStatusOption.value);
-
+        if(getTaskStatusName(task.status) != 'Выполнена') statusDisabled.value = true
     } else {
         filteredStatusOption.value = statusOption.value;
     }

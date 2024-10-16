@@ -15,7 +15,7 @@
           <task-row v-for="task in tasks" :key="task.id" :task="task" :editTask="editTask"
                     :getTaskColor="getTaskColor" :getTaskStatusName="getTaskStatusName" />
           <task-form v-if="newTask && executor" :newTask="newTask" :executorOptions="executorOptions"
-                     :filteredStatusOptions="filteredStatusOptions" :isDisabled="true"  @update:newTask="updateNewTask"/>
+                     :filteredStatusOptions="filteredStatusOptions" :isInputDisable="inpunDisable"  @update:newTask="updateNewTask"/>
           <task-form v-if="newTask && owner" :newTask="newTask" :executorOptions="executorOptions"
                      :filteredStatusOptions="filteredStatusOptions" :updateBtn="updateBtn" :isDisabled="false"  @update:newTask="updateNewTask"/>
         </template>
@@ -48,6 +48,7 @@ const statusOption = ref([])
 const filteredStatusOptions = ref([])
 const subjects = ref(null)
 const executorOptions = ref(null)
+const inpunDisable = ref(true)
 const role = useUserStore().getRole()
 const subjectId = useUserStore().getSubjectId()
 
